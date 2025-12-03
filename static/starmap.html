@@ -486,7 +486,8 @@
 
             .info-panel {
                 order: 2;
-                width: 100%;
+                width: min(100%, 440px);
+                margin: 0 auto 24px;
                 border-left: none;
                 border-top: 1px solid rgba(255, 255, 255, 0.1);
             }
@@ -786,12 +787,18 @@
         let selectedTimeData = null;
         let selectedLocationData = null;
         let stellariumReady = false; // 【新增】
+        let hasAutoNavigated = false;
+        let navigationCheckTimer = null;
+        let navigationAttempts = 0;
+        const MAX_NAVIGATION_ATTEMPTS = 10;
         let stellariumCommunication = {
             ready: false,
             messageQueue: [],
             maxRetries: 5,
             retryDelay: 1000
         };
+        let stellariumHandshakeTimer = null;
+        let communicationInitialized = false;
 
         const DEFAULT_LOCATION = {
             latitude: 22.3964,
@@ -858,11 +865,14 @@
         window.addEventListener('load', function () {
             console.log('🚀 页面加载完成，开始初始化...');
             loadPreviousStepData();
-            setupStellariumCommunication(); // 新增
+            setupStellariumCommunication(); // 确保加载完成后也再执行一次
 
             setupTestButton();// 🔑 新增：直接绑定测试按钮事件
             setupEventListeners();
         });
+
+        // 提前初始化通信，避免 iframe 已经就绪却错过 ready 消息
+        setupStellariumCommunication();
 
         // 🔑 新增：独立的测试按钮设置函数
         function setupTestButton() {
@@ -929,6 +939,9 @@
 
         // 【新增】设置 Stellarium 通信
         function setupStellariumCommunication() {
+            if (communicationInitialized) return;
+            communicationInitialized = true;
+
             console.log('🔗 设置 Stellarium 通信...');
 
             // 监听来自 Stellarium iframe 的消息
@@ -938,10 +951,10 @@
                     return;
                 }
 
+                if (!event.data) return;
+
                 console.log('📨 收到 Stellarium 消息:', event.data);
 
-
-                // 添加这个新的响应处理
                 if (event.data.type === 'stellariumResponse') {
                     console.log('📨 收到Stellarium响应:', event.data);
 
@@ -953,25 +966,40 @@
                     return;
                 }
 
-
                 if (event.data.type === 'stellariumReady') {
                     stellariumCommunication.ready = true;
                     stellariumReady = true; // 保持原有变量
                     console.log('✅ Stellarium Web Engine 已准备就绪');
 
+                    if (stellariumHandshakeTimer) {
+                        clearInterval(stellariumHandshakeTimer);
+                        stellariumHandshakeTimer = null;
+                    }
+
                     // 🔑 关键：等待确保完全初始化
                     setTimeout(() => {
                         sendDataToStellarium();
+                        scheduleConstellationNavigation();
                     }, 2000);
 
-                } else if (event.data.type === 'stellariumResponse') {
-                    console.log('📝 Stellarium 响应:', event.data.message);
-                    updateStatusIndicator(event.data.message);
+                    return;
                 }
             });
-            // 【修复】等待 iframe 完全加载后再尝试通信
+
+            // 【修复】等待 iframe 完全加载后再尝试通信 + 主动握手
             const stellariumFrame = document.getElementById('stellariumFrame');
             if (stellariumFrame) {
+                const startHandshake = () => {
+                    if (stellariumHandshakeTimer) return;
+                    stellariumHandshakeTimer = setInterval(() => {
+                        // iframe 侧新增 handshake 响应，防止 ready 消息被错过
+                        safePostToIframe({ type: 'handshake' });
+                    }, 1000);
+                };
+
+                // 立即尝试一次，避免 load 过早错过
+                startHandshake();
+
                 // 监听 iframe 的 load 事件
                 stellariumFrame.addEventListener('load', function () {
                     console.log('🔄 iframe 加载完成，等待 Stellarium 初始化...');
@@ -980,9 +1008,22 @@
                         if (!stellariumReady) {
                             console.log('⏰ Stellarium 仍在初始化中...');
                             updateStatusIndicator('⏰ Stellarium 初始化中...');
+                            startHandshake();
                         }
                     }, 3000);
                 });
+            }
+        }
+
+        // 在未 ready 时也能安全发送握手消息
+        function safePostToIframe(message) {
+            const stellariumFrame = document.getElementById('stellariumFrame');
+            if (!stellariumFrame || !stellariumFrame.contentWindow) return;
+
+            try {
+                stellariumFrame.contentWindow.postMessage(message, '*');
+            } catch (error) {
+                console.warn('⚠️ 发送握手失败:', error.message);
             }
         }
 
@@ -1218,6 +1259,7 @@
 
                 selectedAstronomyData = data;
                 updateSelectedTimeUI(data);
+                scheduleConstellationNavigation();
                 console.log('✅ [已选择时间] 天文数据加载完成');
 
             } catch (error) {
@@ -1600,6 +1642,48 @@
             sendMessageToStellarium(testData);
 
             updateStatusIndicator(`🧪 已发送测试数据: ${testData.starCi}星次 → ${testData.location.name}`);
+        }
+
+        // 【新增】自动导航调度：等待天文数据和Stellarium准备完毕
+        function scheduleConstellationNavigation() {
+            if (hasAutoNavigated) return;
+
+            if (navigationCheckTimer) {
+                clearInterval(navigationCheckTimer);
+                navigationCheckTimer = null;
+            }
+
+            navigationAttempts = 0;
+
+            const tryNavigate = () => {
+                const hasAstronomy = selectedAstronomyData && selectedAstronomyData.zodiac_sign;
+                const hasTime = selectedTimeData && selectedTimeData.year;
+                const hasLocation = selectedLocationData && selectedLocationData.latitude;
+
+                if (stellariumCommunication.ready && hasAstronomy && hasTime && hasLocation) {
+                    hasAutoNavigated = true;
+                    if (navigationCheckTimer) {
+                        clearInterval(navigationCheckTimer);
+                        navigationCheckTimer = null;
+                    }
+                    performNavigation();
+                } else {
+                    navigationAttempts++;
+                    if (navigationAttempts >= MAX_NAVIGATION_ATTEMPTS && navigationCheckTimer) {
+                        clearInterval(navigationCheckTimer);
+                        navigationCheckTimer = null;
+                        console.warn('⚠️ 自动导航条件未满足，已停止轮询');
+                    }
+                }
+            };
+
+            // 立即尝试一次
+            tryNavigate();
+
+            // 若未成功则启动轮询，等待就绪后自动触发
+            if (!hasAutoNavigated && !navigationCheckTimer) {
+                navigationCheckTimer = setInterval(tryNavigate, 1200);
+            }
         }
 
         function updateDurationPresets(activeDuration) {

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>日晷时间选择器 - 中国时间</title>
     <link rel="preload" href="/static/fonts/wqy-microhei.ttc" as="font" type="font/ttc" crossorigin>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
@@ -60,6 +60,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 100%;
+            max-width: 1180px;
+            margin: 0 auto;
             padding: clamp(2rem, 4vw, 4rem) clamp(1.5rem, 4vw, 3rem) clamp(3rem, 6vw, 5rem);
         }
 
@@ -82,21 +85,21 @@
             line-height: 1.7;
         }
 
-        .glass-card {
-            width: min(100%, 1080px);
-            border-radius: 28px;
-            padding: clamp(1.8rem, 4vw, 3rem);
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            backdrop-filter: blur(22px);
-            box-shadow: 0 30px 80px rgba(14, 18, 43, 0.55);
+        .content-section {
+            width: 100%;
+            display: flex;
+            justify-content: center;
         }
 
         .layout-grid {
+            width: min(100%, 1080px);
+            margin: 0 auto;
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: clamp(1.6rem, 4vw, 2.8rem);
             align-items: center;
+            justify-items: center;
+            justify-content: center;
         }
 
         .sundial-panel {
@@ -106,7 +109,7 @@
         }
 
         .sundial-frame {
-            width: min(80vw, 480px);
+            width: min(96vw, 640px);
             aspect-ratio: 1 / 1;
             position: relative;
         }
@@ -130,12 +133,16 @@
             border: 1px solid rgba(102, 126, 234, 0.25);
             padding: clamp(1.5rem, 3.5vw, 2.4rem);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+            width: min(100%, 640px);
+            margin: 0 auto;
+            justify-self: center;
         }
 
         .info-heading {
             font-size: clamp(1.45rem, 3vw, 1.85rem);
             font-weight: 600;
             margin-bottom: 1rem;
+            text-align: center;
         }
 
         .info-lead {
@@ -227,22 +234,25 @@
         @media (max-width: 1024px) {
             .layout-grid {
                 grid-template-columns: 1fr;
+                justify-items: center;
+                justify-content: center;
+                width: min(100%, 720px);
             }
 
             .info-panel {
                 order: 2;
+                width: min(100%, 560px);
+                margin-inline: auto;
+                justify-self: center;
             }
 
             .sundial-panel {
                 order: 1;
+                justify-content: center;
             }
         }
 
         @media (max-width: 768px) {
-            .glass-card {
-                border-radius: 22px;
-            }
-
             .info-panel {
                 padding: 1.4rem;
             }
@@ -266,8 +276,14 @@
                 padding: 2.4rem 1.1rem 3rem;
             }
 
-            .glass-card {
-                padding: 1.4rem;
+            .layout-grid {
+                width: min(100%, 520px);
+            }
+
+            .info-panel {
+                width: min(100%, 500px);
+                margin-inline: auto;
+                justify-self: center;
             }
 
             .step-indicator {
@@ -292,11 +308,11 @@
 
     <main class="page-container">
         <header class="page-header">
-            <h1 class="page-title">中国时间</h1>
+            <h1 class="page-title">选择观测时间</h1>
             <p class="page-subtitle">旋转日晷盘，选择你的观测日期与时间，捕捉来自宇宙的律动，解锁下一步的星图旅程。</p>
         </header>
 
-        <section class="glass-card">
+        <section class="content-section">
             <div class="layout-grid">
                 <div class="sundial-panel">
                     <div class="sundial-frame">
@@ -305,7 +321,7 @@
                 </div>
 
                 <aside class="info-panel">
-                    <h2 class="info-heading">时间坐标</h2>
+                    <h2 class="info-heading">中国时间</h2>
 
                     <div class="info-grid">
                         <div class="info-card">
@@ -334,10 +350,10 @@
         const ctx = canvas.getContext('2d');
 
         const baseRingDimensions = {
-            year: { radius: 220, width: 30 },
-            month: { radius: 170, width: 26 },
-            day: { radius: 120, width: 22 },
-            hour: { radius: 75, width: 16 }
+            year: { radius: 240, width: 32 },
+            month: { radius: 190, width: 28 },
+            day: { radius: 140, width: 24 },
+            hour: { radius: 95, width: 18 }
         };
 
         const DEFAULT_LOCATION = {
@@ -407,9 +423,9 @@
             const wrapper = document.querySelector('.sundial-frame');
             if (!wrapper) return;
 
-            const availableWidth = wrapper.clientWidth || Math.min(window.innerWidth * 0.8, 480);
-            const availableHeight = window.innerHeight * 0.62;
-            const finalSize = Math.max(Math.min(availableWidth, availableHeight, 540), 260);
+            const availableWidth = wrapper.clientWidth || Math.min(window.innerWidth * 0.96, 640);
+            const availableHeight = window.innerHeight * 0.72;
+            const finalSize = Math.max(Math.min(availableWidth, availableHeight, 640), 340);
             const dpr = window.devicePixelRatio || 1;
 
             canvas.style.width = finalSize + 'px';
@@ -435,16 +451,6 @@
 
         function drawSundial() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const backgroundRadius = Math.min(centerX, centerY) - 20 * renderScale;
-            const gradient = ctx.createRadialGradient(centerX, centerY, backgroundRadius * 0.15, centerX, centerY, backgroundRadius);
-            gradient.addColorStop(0, 'rgba(139, 92, 246, 0.35)');
-            gradient.addColorStop(1, 'rgba(30, 24, 54, 0.25)');
-
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, backgroundRadius, 0, Math.PI * 2);
-            ctx.fill();
 
             drawRing('year', '年份', '#f6ad55');
             drawRing('month', '月份', '#fbd38d');

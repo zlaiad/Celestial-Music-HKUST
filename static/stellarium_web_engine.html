@@ -386,19 +386,20 @@
                                                 }
                                             }
 
+                                            // 与现代黄道十二宫严格对应，避免导航偏移
                                             const starCiMapping = {
-                                                "星纪": "Sagittarius",   // 人马宫 ✅（斗宿+牛宿，主要在人马座）
-                                                "玄枵": "Aquarius",      // 宝瓶宫 ✅（危宿+室宿+壁宿）
-                                                "娵訾": "Aries",         // 白羊宫 ✅（奎宿+娄宿+胃宿，主要在白羊座）
-                                                "降娄": "Taurus",        // 金牛宫 ✅（昴宿+毕宿）
-                                                "大梁": "Orion",         // 猎户宫 ✅（觜宿+参宿，非黄道星座但重要）
-                                                "实沈": "Gemini",        // 双子宫 ✅（井宿+鬼宿）
-                                                "鹑首": "Hydra",         // 长蛇宫 ✅（柳宿+星宿，主要在长蛇座）
-                                                "鹑火": "Hydra",         // 长蛇宫 ✅（张宿+翼宿，延续长蛇座）
-                                                "鹑尾": "Corvus",        // 乌鸦宫 ✅（轸宿）
-                                                "寿星": "Virgo",         // 室女宫 ✅（角宿+亢宿）
-                                                "大火": "Scorpius",      // 天蝎宫 ✅（氐宿+房宿+心宿）
-                                                "析木": "Scorpius"       // 天蝎宫 ✅（尾宿+箕宿）
+                                                "星纪": "Capricornus",  // 魔羯宫
+                                                "玄枵": "Aquarius",     // 宝瓶宫
+                                                "娵訾": "Pisces",        // 双鱼宫
+                                                "降娄": "Aries",         // 白羊宫
+                                                "大梁": "Taurus",        // 金牛宫
+                                                "实沈": "Gemini",        // 双子宫
+                                                "鹑首": "Cancer",        // 巨蟹宫
+                                                "鹑火": "Leo",           // 狮子宫
+                                                "鹑尾": "Virgo",         // 处女宫
+                                                "寿星": "Libra",         // 天秤宫
+                                                "大火": "Scorpius",      // 天蝎宫
+                                                "析木": "Sagittarius"    // 射手宫
                                             };
 
                                             const targetConstellation = starCiMapping[event.data.starCi];
@@ -445,6 +446,13 @@
                                                     error: error.message
                                                 }, '*');
                                             }
+                                        }
+                                        break;
+
+                                    // 主动握手，避免父页面错过 ready 消息
+                                    case 'handshake':
+                                        if (window.parent !== window) {
+                                            window.parent.postMessage({ type: 'stellariumReady' }, '*');
                                         }
                                         break;
 
