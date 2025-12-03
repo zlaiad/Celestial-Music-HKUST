@@ -412,40 +412,6 @@
             margin-right: 8px;
         }
 
-        .status-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid rgba(0, 255, 0, 0.5);
-            color: #00ff00;
-            padding: 8px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            backdrop-filter: blur(5px);
-            z-index: 1001;
-            /* 确保在iframe之上 */
-        }
-
-        /* .status-indicator {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 255, 0, 0.2);
-            border: 1px solid rgba(0, 255, 0, 0.5);
-            color: #00ff00;
-            padding: 8px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            backdrop-filter: blur(5px);
-        } */
-
-        .status-indicator.error {
-            background: rgba(255, 0, 0, 0.2);
-            border-color: rgba(255, 0, 0, 0.5);
-            color: #ff6b6b;
-        }
-
         .timeout-help {
             background: rgba(255, 193, 7, 0.1);
             border: 1px solid rgba(255, 193, 7, 0.3);
@@ -679,9 +645,6 @@
                 allow="accelerometer; gyroscope" onload="onStellariumLoad()">
             </iframe>
 
-            <!-- 保留状态指示器 -->
-            <div class="status-indicator" id="statusIndicator">正在加载真实星图...</div>
-
             <!-- 简化的加载指示器 -->
             <div class="loading" id="loadingIndicator" style="display: none;">
                 <div class="spinner"></div>
@@ -720,23 +683,6 @@
             <div class="info-item">
                 <span class="info-label">现代星座:</span>
                 <span class="info-value" id="modernConstellation">--</span>
-            </div>
-
-            <div class="section-title mt-6">
-                <i class="fas fa-music"></i> 节气音乐参数
-                <span class="duration-display" id="durationDisplay">45秒</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">乐器:</span>
-                <span class="info-value" id="instrument">传统民乐</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">调式:</span>
-                <span class="info-value" id="mode">五声音阶</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">风格:</span>
-                <span class="info-value">节气主题</span>
             </div>
 
             <div class="section-title mt-6">
@@ -854,6 +800,23 @@
 
 
 
+        function updateStatusIndicator(text, options = {}) {
+            const el = document.getElementById('statusIndicator');
+            if (!el) return;
+
+            if (typeof text === 'string') {
+                el.textContent = text;
+            }
+
+            if (options.color) {
+                el.style.color = options.color;
+            }
+
+            if (options.className) {
+                el.className = options.className;
+            }
+        }
+
         // Three.js CDN加载
         (function () {
             const cdnSources = [
@@ -866,8 +829,7 @@
             function loadThreeJS() {
                 if (currentCDN >= cdnSources.length) {
                     console.error('所有Three.js CDN都加载失败');
-                    document.getElementById('statusIndicator').textContent = 'Three.js加载失败';
-                    document.getElementById('statusIndicator').className = 'status-indicator error';
+                    updateStatusIndicator('Three.js加载失败', { className: 'status-indicator error' });
                     return;
                 }
 
@@ -958,7 +920,7 @@
         // 【新增】iframe 加载完成回调
         function onStellariumLoad() {
             console.log('📡 Stellarium iframe 加载完成');
-            document.getElementById('statusIndicator').textContent = '📡 等待 Stellarium 初始化...';
+            updateStatusIndicator('📡 等待 Stellarium 初始化...');
         }
 
         // 【新增】设置 Stellarium 通信
@@ -980,11 +942,9 @@
                     console.log('📨 收到Stellarium响应:', event.data);
 
                     if (event.data.success) {
-                        document.getElementById('statusIndicator').textContent = '✅ ' + event.data.message;
-                        document.getElementById('statusIndicator').style.color = '#00ff00';
+                        updateStatusIndicator('✅ ' + event.data.message, { color: '#00ff00' });
                     } else {
-                        document.getElementById('statusIndicator').textContent = '❌ ' + (event.data.error || '操作失败');
-                        document.getElementById('statusIndicator').style.color = '#ff6b6b';
+                        updateStatusIndicator('❌ ' + (event.data.error || '操作失败'), { color: '#ff6b6b' });
                     }
                     return;
                 }
@@ -1002,7 +962,7 @@
 
                 } else if (event.data.type === 'stellariumResponse') {
                     console.log('📝 Stellarium 响应:', event.data.message);
-                    document.getElementById('statusIndicator').textContent = event.data.message;
+                    updateStatusIndicator(event.data.message);
                 }
             });
             // 【修复】等待 iframe 完全加载后再尝试通信
@@ -1015,7 +975,7 @@
                     setTimeout(function () {
                         if (!stellariumReady) {
                             console.log('⏰ Stellarium 仍在初始化中...');
-                            document.getElementById('statusIndicator').textContent = '⏰ Stellarium 初始化中...';
+                            updateStatusIndicator('⏰ Stellarium 初始化中...');
                         }
                     }, 3000);
                 });
@@ -1114,7 +1074,7 @@
                 }
             }
 
-            document.getElementById('statusIndicator').textContent = '📡 数据已发送到 Stellarium';
+            updateStatusIndicator('📡 数据已发送到 Stellarium');
         }
 
         // 【修改】预览功能 - 同时更新 Stellarium 和天文数据
@@ -1568,15 +1528,12 @@
         function setupEventListeners() {
             // 时长控制
             const durationInput = document.getElementById('durationInput');
-            const durationDisplay = document.getElementById('durationDisplay');
             durationInput.value = FIXED_DURATION;
             durationInput.setAttribute('readonly', 'true');
             durationInput.setAttribute('disabled', 'disabled');
-            durationDisplay.textContent = `${FIXED_DURATION}秒`;
 
             durationInput.addEventListener('input', () => {
                 durationInput.value = FIXED_DURATION;
-                durationDisplay.textContent = `${FIXED_DURATION}秒`;
                 updateDurationPresets(FIXED_DURATION);
             });
 
@@ -1584,7 +1541,6 @@
             document.querySelectorAll('.duration-preset').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     durationInput.value = FIXED_DURATION;
-                    durationDisplay.textContent = `${FIXED_DURATION}秒`;
                     updateDurationPresets(FIXED_DURATION);
                 });
             });
@@ -1639,8 +1595,7 @@
             // 发送到Stellarium
             sendMessageToStellarium(testData);
 
-            document.getElementById('statusIndicator').textContent =
-                `🧪 已发送测试数据: ${testData.starCi}星次 → ${testData.location.name}`;
+            updateStatusIndicator(`🧪 已发送测试数据: ${testData.starCi}星次 → ${testData.location.name}`);
         }
 
         function updateDurationPresets(activeDuration) {
