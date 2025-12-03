@@ -29,7 +29,7 @@
 
         .debug-panel {
             position: absolute;
-            top: 64px;
+            top: 16px;
             right: 20px;
             width: 400px;
             background: rgba(0, 0, 0, 0.9);
@@ -47,12 +47,6 @@
 <body>
     <div id="app">
         <v-app>
-            <v-app-bar class="xsemi-transparent">
-                <v-toolbar-title>Stellarium Web Engine 完整版</v-toolbar-title>
-                <v-spacer></v-spacer>
-                <div style="color: #00ff00; font-size: 12px;">{{ apiStatus }}</div>
-            </v-app-bar>
-
             <!-- 🐛 调试面板 -->
             <div class="debug-panel" v-show="false">
                 <h4>🐛 Stellarium API 调试</h4>
@@ -60,16 +54,6 @@
                 <button @click="clearDebug"
                     style="margin-top: 10px; padding: 5px; background: #333; color: white; border: none; border-radius: 3px;">清空调试</button>
             </div>
-
-            <v-footer app fixed class="transparent" style="height:auto;">
-                <v-spacer></v-spacer>
-                <stel-button label="Constellations" img="static/imgs/symbols/btn-cst-lines.svg"
-                    :obj="stel && stel.core.constellations" attr="lines_visible"></stel-button>
-                <stel-button label="Atmosphere" img="static/imgs/symbols/btn-atmosphere.svg"
-                    :obj="stel && stel.core.atmosphere" attr="visible"></stel-button>
-                <!-- <stel-button label="Landscape" img="static/imgs/symbols/btn-landscape.svg" :obj="stel && stel.core.landscapes" attr="visible"></stel-button> -->
-                <v-spacer></v-spacer>
-            </v-footer>
 
             <div id="stel" class="w-100 h-100" style="position: relative;">
                 <canvas id="stel-canvas" style="position:absolute;" class="w-100 h-100"></canvas>
