@@ -412,6 +412,22 @@
                                                     debugLog(`🚀 开始导航到 ${targetConstellation}`);
                                                     that.focusConstellation(targetConstellation);
 
+                                                    // 高亮星座图像
+                                                    that.stel.core.constellations.art_visible = true;
+                                                    if (typeof that.stel.core.constellations.art_opacity !== 'undefined') {
+                                                        that.stel.core.constellations.art_opacity = 0.9;
+                                                    }
+                                                    if (typeof that.stel.core.constellations.art_fade_duration !== 'undefined') {
+                                                        that.stel.core.constellations.art_fade_duration = 0.5;
+                                                    }
+
+                                                    // 立即刷新一次，确保星座图案点亮
+                                                    try {
+                                                        that.stel.core.update();
+                                                    } catch (refreshErr) {
+                                                        debugLog(`⚠️ 刷新星座图案失败: ${refreshErr.message}`);
+                                                    }
+
                                                     // 显示星座线
                                                     that.stel.core.constellations.lines_visible = true;
                                                     that.stel.core.constellations.labels_visible = true;
@@ -611,64 +627,101 @@
                     debugLog(`开始聚焦星座: ${constellationName}`);
 
                     try {
+                        // 先使用主星锚点，保持与前端映射一致
                         var starMap = {
-                            'Capricorn': null,           // 摩羯座 - 需要fallback
-                            'Aquarius': '危宿一',        // 宝瓶座 → Sadalmelik
-                            'Pisces': null,              // 双鱼座 - 需要fallback  
-                            'Aries': '娄宿三',           // 白羊座 → Hamal ✅ 已确认有效
-                            'Taurus': '毕宿五',          // 金牛座 → Aldebaran ✅ 已确认有效
-                            'Gemini': '井宿三',          // 双子座 → Alhena
-                            'Cancer': null,              // 巨蟹座 - 需要fallback
-                            'Leo': '轩辕十四',           // 狮子座 → Regulus ✅ 已确认有效
-                            'Virgo': '角宿一',           // 室女座 → Spica ✅ 已确认有效
-                            'Libra': '氐宿一',           // 天秤座 → Zubenelgenubi
-                            'Scorpius': '心宿二',        // 天蝎座 → Antares ✅ 已确认有效
-                            'Sagittarius': '斗宿四',     // 人马座 → Nunki ✅ 已确认有效
-                            'Orion': '参宿四',           // 猎户座 → Betelgeuse  
-                            'Hydra': '星宿一',           // 长蛇座 → Alphard
-                            'Corvus': '轸宿一'           // 乌鸦座 → Gienah
+                            'Capricornus': ['牛宿一', 'Deneb Algedi', 'Delta Capricorni', 'δ Capricorni'],      // 摩羯座
+                            'Aquarius': ['危宿一', 'Sadalmelik', 'Alpha Aquarii'],        // 宝瓶座
+                            'Pisces': ['壁宿一', 'Alrescha', 'Al Risha', 'Alrisha', 'Alrischa', 'Alpha Piscium', 'α Piscium'], // 双鱼座
+                            'Aries': ['娄宿三', 'Hamal', 'Alpha Arietis'],           // 白羊座
+                            'Taurus': ['毕宿五', 'Aldebaran', 'Alpha Tauri'],          // 金牛座
+                            'Gemini': ['井宿三', 'Alhena', 'Gamma Geminorum'],          // 双子座
+                            'Cancer': ['鬼宿四', 'Acubens', 'Alpha Cancri'],              // 巨蟹座备用
+                            'Leo': ['轩辕十四', 'Regulus', 'Alpha Leonis'],             // 狮子座
+                            'Virgo': ['角宿一', 'Spica', 'Alpha Virginis'],             // 室女座
+                            'Libra': ['氐宿一', 'Zubenelgenubi', 'Alpha Librae'],       // 天秤座
+                            'Scorpius': ['心宿二', 'Antares', 'Alpha Scorpii'],         // 天蝎座
+                            'Sagittarius': ['斗宿四', 'Nunki', 'Sigma Sagittarii'],     // 人马座
+                            'Orion': ['参宿四', 'Betelgeuse', 'Alpha Orionis'],          // 猎户座
+                            'Hydra': ['星宿一', 'Alphard', 'Alpha Hydrae'],               // 长蛇座
+                            'Corvus': ['轸宿一', 'Gienah', 'Gamma Corvi']                 // 乌鸦座
                         };
 
-                        var mainStar = starMap[constellationName];
-                        if (mainStar) {
-                            debugLog(`初步尝试通过主星${mainStar}聚焦${constellationName}`);
+                        // 当主星不可用时，使用黄道星座的中心赤道坐标直接设置视角
+                        var constellationCenters = {
+                            'Capricornus': { ra: 326.75, dec: -16.7 },
+                            'Capricorn': { ra: 326.75, dec: -16.7 },
+                            'Aquarius': { ra: 338.0, dec: -9.0 },
+                            'Pisces': { ra: 33.0, dec: 6.0 },
+                            'Aries': { ra: 42.0, dec: 20.0 },
+                            'Taurus': { ra: 70.0, dec: 18.0 },
+                            'Gemini': { ra: 105.0, dec: 22.0 },
+                            'Cancer': { ra: 128.0, dec: 20.0 },
+                            'Leo': { ra: 152.0, dec: 15.0 },
+                            'Virgo': { ra: 190.0, dec: -5.0 },
+                            'Libra': { ra: 225.0, dec: -15.0 },
+                            'Scorpius': { ra: 247.0, dec: -30.0 },
+                            'Sagittarius': { ra: 283.0, dec: -25.0 }
+                        };
+
+                        var candidates = starMap[constellationName] || [];
+                        for (var i = 0; i < candidates.length; i++) {
+                            var mainStar = candidates[i];
+                            debugLog(`尝试通过主星${mainStar}聚焦${constellationName}`);
                             var star = this.stel.getObj(mainStar);
-                            if (star) {
-                                debugLog(`找到主星${star}，开始聚焦`);
-
-                                // 🎯 关键修复：使用正确的聚焦方法
-                                this.stel.core.selection = star;
-
-                                // 方法A：使用pointAndLock
-                                if (this.stel.pointAndLock) {
-                                    this.stel.pointAndLock(star);
-                                    debugLog('✅ 使用pointAndLock聚焦');
-                                }
-                                // 方法B：使用lookAt with更长时间
-                                else if (this.stel.lookAt) {
-                                    this.stel.lookAt(star, 3.0); // 3秒动画
-                                    debugLog('✅ 使用lookAt聚焦');
-                                }
-                                // 方法C：手动设置观测方向并触发更新
-                                else {
-                                    var starInfo = star.getInfo('radec');
-                                    if (starInfo) {
-                                        this.stel.core.observer.view_direction = starInfo;
-                                        this.stel.core.update(); // 强制更新
-                                        debugLog('✅ 手动设置视图方向');
-                                    }
-                                }
-
-                                // 显示星座线
-                                this.stel.core.constellations.lines_visible = true;
-                                this.apiStatus = `✅ 已聚焦${constellationName}(${mainStar})`;
-                                debugLog(`✅ 通过${mainStar}聚焦${constellationName}成功`);
-                                return;
+                            if (!star) {
+                                continue;
                             }
+
+                            debugLog(`找到主星${mainStar}，开始聚焦`);
+
+                            // 🎯 关键修复：使用正确的聚焦方法
+                            this.stel.core.selection = star;
+
+                            // 方法A：使用pointAndLock
+                            if (this.stel.pointAndLock) {
+                                this.stel.pointAndLock(star);
+                                debugLog('✅ 使用pointAndLock聚焦');
+                            }
+                            // 方法B：使用lookAt with更长时间
+                            else if (this.stel.lookAt) {
+                                this.stel.lookAt(star, 3.0); // 3秒动画
+                                debugLog('✅ 使用lookAt聚焦');
+                            }
+                            // 方法C：手动设置观测方向并触发更新
                             else {
-                                debugLog(`❌ 未找到主星${mainStar}，无法聚焦${constellationName}`);
-                                return;
+                                var starInfo = star.getInfo('radec');
+                                if (starInfo) {
+                                    this.stel.core.observer.view_direction = starInfo;
+                                    this.stel.core.update(); // 强制更新
+                                    debugLog('✅ 手动设置视图方向');
+                                }
                             }
+
+                            // 显示星座线和图像
+                            this.stel.core.constellations.lines_visible = true;
+                            this.stel.core.constellations.art_visible = true;
+                            this.stel.core.constellations.art_opacity = 0.9;
+                            this.apiStatus = `✅ 已聚焦${constellationName}(${mainStar})`;
+                            debugLog(`✅ 通过${mainStar}聚焦${constellationName}成功`);
+                            return;
+                        }
+
+                        // 主星不可用时，使用黄道星座中心坐标直接指向对应【xx座】
+                        if (constellationCenters[constellationName]) {
+                            var coords = constellationCenters[constellationName];
+                            var radRa = coords.ra * Math.PI / 180;
+                            var radDec = coords.dec * Math.PI / 180;
+                            this.stel.core.observer.view_direction = { ra: radRa, dec: radDec };
+                            this.stel.core.constellations.lines_visible = true;
+                            this.stel.core.constellations.art_visible = true;
+                            this.stel.core.constellations.art_opacity = 0.9;
+                            if (typeof this.stel.core.constellations.art_fade_duration !== 'undefined') {
+                                this.stel.core.constellations.art_fade_duration = 0.5;
+                            }
+                            this.stel.core.update();
+                            this.apiStatus = `✅ 直接指向${constellationName}`;
+                            debugLog(`✅ 使用中心坐标直接指向${constellationName}`);
+                            return;
                         }
 
                         this.apiStatus = `❌ 找不到${constellationName}`;
@@ -678,7 +731,6 @@
                         debugLog(`❌ ${constellationName}聚焦失败: ${error.message}`);
                     }
                 },
-
                 // 🎯 修复太阳聚焦
                 focusSun: function () {
                     if (!this.stel) return;
