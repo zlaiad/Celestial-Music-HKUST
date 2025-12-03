@@ -357,13 +357,13 @@
 
                     <div class="info-grid">
                         <div class="info-card">
-                            <i class="fas fa-calendar-alt"></i>
-                            <p class="info-label">日期</p>
+<!--                            <i class="fas fa-calendar-alt"></i>-->
+<!--                            <p class="info-label">日期</p>-->
                             <p class="info-value" id="selectedDate">1950年1月1日</p>
                         </div>
                         <div class="info-card">
-                            <i class="fas fa-clock"></i>
-                            <p class="info-label">小时</p>
+<!--                            <i class="fas fa-clock"></i>-->
+<!--                            <p class="info-label">小时</p>-->
                             <p class="info-value" id="selectedTime">00:00</p>
                         </div>
                     </div>
@@ -563,33 +563,41 @@
             ctx.fill();
         }
 
-        function drawValues(type, radius) {
-            const ring = rings[type];
-            const totalRange = ring.max - ring.min;
-            const tickCount = Math.min(totalRange + 1, 12);
-            const textOffset = 26 * renderScale;
+function drawValues(type, radius) {
+    const ring = rings[type];
+    const totalRange = ring.max - ring.min;
+    let tickCount = Math.min(totalRange + 1, 12); // 最多 12 个文字
+    const textOffset = 26 * renderScale;
 
-            ctx.fillStyle = '#f9fafb';
-            ctx.font = `${Math.max(11 * renderScale, 9)}px "Inter", "Segoe UI", sans-serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f9fafb';
+    ctx.font = `${Math.max(11 * renderScale, 9)}px "Inter", "Segoe UI", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-            if (tickCount <= 1) {
-                ctx.fillText(ring.current.toString(), centerX, centerY - (radius + textOffset));
-                return;
-            }
+    if (tickCount <= 1) {
+        ctx.fillText(ring.current.toString(), centerX, centerY - (radius + textOffset));
+        return;
+    }
 
-            for (let i = 0; i < tickCount; i++) {
-                const ratio = i / (tickCount - 1);
-                const value = Math.round(ring.min + ratio * totalRange);
-                const angle = ratio * 360 - 90;
-                const radian = (angle * Math.PI) / 180;
-                const x = centerX + Math.cos(radian) * (radius + textOffset);
-                const y = centerY + Math.sin(radian) * (radius + textOffset);
+    // 月 / 日 / 小时是“首尾相接”的，少画一个刻度避免首尾重叠
+    const isCircularScale = type === 'month' || type === 'day' || type === 'hour';
+    if (isCircularScale && tickCount > 2) {
+        tickCount -= 1;
+    }
 
-                ctx.fillText(value.toString(), x, y);
-            }
-        }
+    for (let i = 0; i < tickCount; i++) {
+        // 注意这里用 tickCount 作为分母，不是 tickCount - 1
+        const ratio = i / tickCount;
+        const value = Math.round(ring.min + ratio * totalRange);
+        const angle = ratio * 360 - 90;
+        const radian = (angle * Math.PI) / 180;
+        const x = centerX + Math.cos(radian) * (radius + textOffset);
+        const y = centerY + Math.sin(radian) * (radius + textOffset);
+
+        ctx.fillText(value.toString(), x, y);
+    }
+}
+
 
         function drawPointer() {
             const pointerHeight = 52 * renderScale;
