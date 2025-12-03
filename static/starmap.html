@@ -487,6 +487,52 @@
             line-height: 1.4;
             margin-bottom: 10px;
         }
+
+        /* 移动端布局适配 */
+        .mobile-only {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            body {
+                overflow-y: auto;
+            }
+
+            .main-container {
+                flex-direction: column;
+                height: auto;
+                min-height: 100vh;
+            }
+
+            .control-panel {
+                display: none;
+            }
+
+            .star-canvas-container {
+                order: 1;
+                width: 100%;
+                height: 60vh;
+            }
+
+            .info-panel {
+                order: 2;
+                width: 100%;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .section-title {
+                font-size: 15px;
+            }
+
+            .info-item {
+                font-size: 13px;
+            }
+
+            .mobile-only {
+                display: block;
+            }
+        }
     </style>
 </head>
 
@@ -554,17 +600,11 @@
             <div class="control-group">
                 <label class="info-label">节气音乐时长设置</label>
                 <div class="duration-control">
-                    <input type="number" id="durationInput" class="duration-input" value="45" min="15" max="180"
-                        step="5">
-                    <span class="text-xs text-gray-400">秒</span>
+                    <input type="number" id="durationInput" class="duration-input" value="45" min="45" max="45"
+                        step="45" readonly aria-readonly="true">
+                    <span class="text-xs text-gray-400">秒（已固定）</span>
                 </div>
-                <div class="flex gap-1 mt-2">
-                    <button class="duration-preset" data-duration="30">30s</button>
-                    <button class="duration-preset active" data-duration="45">45s</button>
-                    <button class="duration-preset" data-duration="60">60s</button>
-                    <button class="duration-preset" data-duration="90">90s</button>
-                </div>
-                <div class="text-xs text-gray-400 mt-1">推荐45秒，生成更完整的节气音乐作品</div>
+                <div class="text-xs text-gray-400 mt-1">节气音乐时长固定为45秒</div>
             </div>
 
             <div class="control-group">
@@ -748,6 +788,10 @@
 
             <audio id="musicPlayer" controls class="w-full mt-3" style="display: none;"></audio>
 
+            <button id="mobileGenerateBtn" class="btn btn-secondary mobile-only mt-4">
+                <i class="fas fa-music"></i> 生成节气音乐
+            </button>
+
             <div id="retrySection" style="display: none;">
                 <div class="retry-options">
                     <button id="retryBtn" class="retry-btn btn-warning">
@@ -805,6 +849,8 @@
             address: '香港',
             country: '中国'
         };
+
+        const FIXED_DURATION = 45;
 
 
 
@@ -1523,25 +1569,35 @@
             // 时长控制
             const durationInput = document.getElementById('durationInput');
             const durationDisplay = document.getElementById('durationDisplay');
-            durationInput.addEventListener('input', (e) => {
-                const duration = parseInt(e.target.value);
-                durationDisplay.textContent = `${duration}秒`;
-                updateDurationPresets(duration);
+            durationInput.value = FIXED_DURATION;
+            durationInput.setAttribute('readonly', 'true');
+            durationInput.setAttribute('disabled', 'disabled');
+            durationDisplay.textContent = `${FIXED_DURATION}秒`;
+
+            durationInput.addEventListener('input', () => {
+                durationInput.value = FIXED_DURATION;
+                durationDisplay.textContent = `${FIXED_DURATION}秒`;
+                updateDurationPresets(FIXED_DURATION);
             });
 
             // 时长预设按钮
             document.querySelectorAll('.duration-preset').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const duration = parseInt(e.target.dataset.duration);
-                    durationInput.value = duration;
-                    durationDisplay.textContent = `${duration}秒`;
-                    updateDurationPresets(duration);
+                    durationInput.value = FIXED_DURATION;
+                    durationDisplay.textContent = `${FIXED_DURATION}秒`;
+                    updateDurationPresets(FIXED_DURATION);
                 });
             });
 
             // 【修改】事件监听 - 分离更新按钮和音乐生成按钮
             document.getElementById('updateBtn').addEventListener('click', updatePreviewAstronomyData);  // 【修改】预览数据
-            document.getElementById('generateMusicBtn').addEventListener('click', generateMusic);
+            const desktopGenerateBtn = document.getElementById('generateMusicBtn');
+            const mobileGenerateBtn = document.getElementById('mobileGenerateBtn');
+
+            desktopGenerateBtn.addEventListener('click', generateMusic);
+            if (mobileGenerateBtn) {
+                mobileGenerateBtn.addEventListener('click', generateMusic);
+            }
 
             // 重试按钮
             document.getElementById('retryBtn').addEventListener('click', () => retryMusic(false));
@@ -1703,12 +1759,22 @@
         // 【修改】generateMusic - 使用已选择时间的数据
         async function generateMusic() {
             const generateBtn = document.getElementById('generateMusicBtn');
-            const originalText = generateBtn.innerHTML;
-            const duration = parseInt(document.getElementById('durationInput').value);
+            const mobileGenerateBtn = document.getElementById('mobileGenerateBtn');
+            const originalDesktopText = generateBtn ? generateBtn.innerHTML : '';
+            const originalMobileText = mobileGenerateBtn ? mobileGenerateBtn.innerHTML : '';
+            const duration = FIXED_DURATION;
+
+            if (document.getElementById('durationInput')) {
+                document.getElementById('durationInput').value = duration;
+            }
 
             try {
-                generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成节气音乐...';
-                generateBtn.disabled = true;
+                [generateBtn, mobileGenerateBtn].forEach(btn => {
+                    if (btn) {
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成节气音乐...';
+                        btn.disabled = true;
+                    }
+                });
                 showMusicStatus('loading', `正在生成${duration}秒节气音乐...`, '正在根据已选择时间的节气特色生成音乐');
                 showLoadingIndicator(true, `生成${duration}秒节气音乐中...`);
 
@@ -1775,8 +1841,13 @@
                 retryCount = 0;
                 showRetryOptions(true);
             } finally {
-                generateBtn.innerHTML = originalText;
-                generateBtn.disabled = false;
+                [generateBtn, mobileGenerateBtn].forEach(btn => {
+                    if (btn) {
+                        const originalText = btn === generateBtn ? originalDesktopText : originalMobileText;
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
+                });
                 showLoadingIndicator(false);
             }
         }
@@ -1796,7 +1867,7 @@
 
             // 检查音乐生成是否成功
             if (result.music && result.music.success !== false) {
-                const duration = result.parameters?.duration || 45;
+                const duration = FIXED_DURATION;
 
                 if (result.music.download_url) {
                     showMusicStatus('success', `${duration}秒节气音乐生成成功！`, '正在加载音频文件...');
@@ -1815,11 +1886,11 @@
                 }
             } else if (result.music && result.music.success === false) {
                 const errorMsg = result.music.error || '外部音乐服务超时';
-                const duration = result.parameters?.duration || 45;
+                const duration = FIXED_DURATION;
                 showMusicStatus('warning', `${duration}秒节气音乐参数生成成功`, `天文计算已完成，但音频生成失败：${errorMsg}`);
                 showRetryOptions(true);
             } else {
-                const duration = result.parameters?.duration || 45;
+                const duration = FIXED_DURATION;
                 showMusicStatus('warning', `${duration}秒节气音乐参数生成成功`, '天文数据计算完成，但音频文件生成失败，请重试');
                 showRetryOptions(true);
             }
@@ -1830,7 +1901,7 @@
             document.getElementById('paramSolarTerm').textContent = astronomy.solar_term || parameters.solar_term || '--';
             document.getElementById('paramInstrument').textContent = parameters.instrument || '--';
             document.getElementById('paramMode').textContent = parameters.mode || '--';
-            document.getElementById('paramDuration').textContent = (parameters.duration || 45) + '秒';
+            document.getElementById('paramDuration').textContent = `${FIXED_DURATION}秒`;
             document.getElementById('musicParamsDisplay').style.display = 'block';
         }
 
@@ -1979,7 +2050,7 @@
             }
 
             const waitTime = force ? 1000 : (retryCount * 2000);
-            const duration = parseInt(document.getElementById('durationInput').value);
+            const duration = FIXED_DURATION;
             showMusicStatus('loading', '准备重试...', `等待 ${waitTime / 1000} 秒后重新生成${duration}秒节气音乐`);
 
             setTimeout(() => {
