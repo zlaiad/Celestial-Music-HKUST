@@ -17,80 +17,6 @@
             overflow: hidden;
         }
 
-        /* 步骤导航样式 */
-        .step-navigation {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 40px;
-            z-index: 1000;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 15px 30px;
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .step {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            padding: 10px;
-            border-radius: 15px;
-        }
-
-        .step:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .step-number {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .step-label {
-            font-size: 12px;
-            color: #cccccc;
-        }
-
-        .step.completed .step-number {
-            background: #4ade80;
-            color: #000000;
-        }
-
-        .step.active .step-number {
-            background: #3b82f6;
-            color: #ffffff;
-        }
-
-        .step.inactive .step-number {
-            background: rgba(255, 255, 255, 0.2);
-            color: #888888;
-        }
-
-        .step.active .step-label {
-            color: #3b82f6;
-        }
-
-        .step-connector {
-            width: 30px;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            align-self: center;
-            margin-top: 17px;
-        }
-
         .main-container {
             display: flex;
             height: 100vh;
@@ -565,32 +491,6 @@
 </head>
 
 <body>
-    <!-- 步骤导航 -->
-    <div class="step-navigation">
-        <div class="step completed" onclick="goBackToStep(1)">
-            <div class="step-number">1</div>
-            <div class="step-label">时间选择</div>
-        </div>
-
-        <div class="step-connector"></div>
-        <div class="step completed" onclick="goBackToStep(2)">
-            <div class="step-number">2</div>
-            <div class="step-label">位置选择</div>
-        </div>
-
-        <div class="step-connector"></div>
-        <div class="step completed" onclick="goBackToStep(3)">
-            <div class="step-number">3</div>
-            <div class="step-label">天球坐标</div>
-        </div>
-
-        <div class="step-connector"></div>
-        <div class="step active">
-            <div class="step-number">4</div>
-            <div class="step-label">节气星图</div>
-        </div>
-    </div>
-
     <div class="main-container">
         <!-- 控制面板 -->
         <div class="control-panel">
@@ -897,6 +797,13 @@
             messageQueue: [],
             maxRetries: 5,
             retryDelay: 1000
+        };
+
+        const DEFAULT_LOCATION = {
+            latitude: 22.3964,
+            longitude: 114.1095,
+            address: '香港',
+            country: '中国'
         };
 
 
@@ -1225,6 +1132,13 @@
             try {
                 selectedTimeData = JSON.parse(sessionStorage.getItem('selectedTime') || '{}');
                 selectedLocationData = JSON.parse(sessionStorage.getItem('selectedLocation') || '{}');
+
+                if (!selectedLocationData || !selectedLocationData.latitude) {
+                    selectedLocationData = { ...DEFAULT_LOCATION };
+                    sessionStorage.setItem('selectedLocation', JSON.stringify(selectedLocationData));
+                    console.log('未检测到位置数据，使用默认香港位置:', selectedLocationData);
+                }
+
                 console.log('读取到的时间数据:', selectedTimeData);
                 console.log('读取到的位置数据:', selectedLocationData);
                 displaySelectedInfo(selectedTimeData, selectedLocationData);

@@ -92,44 +92,6 @@
             box-shadow: 0 30px 80px rgba(14, 18, 43, 0.55);
         }
 
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: clamp(0.75rem, 4vw, 1.75rem);
-            flex-wrap: wrap;
-            margin-bottom: clamp(1.5rem, 4vw, 2.8rem);
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: clamp(2.5rem, 6vw, 3.1rem);
-            height: clamp(2.5rem, 6vw, 3.1rem);
-            border-radius: 999px;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.8);
-            background: rgba(255, 255, 255, 0.16);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-        }
-
-        .step.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: #fff;
-            box-shadow: 0 10px 25px rgba(118, 75, 162, 0.45);
-            transform: translateY(-2px);
-        }
-
-        .step-line {
-            flex: 1 1 60px;
-            height: 3px;
-            border-radius: 999px;
-            background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(102, 126, 234, 0.5), rgba(118, 75, 162, 0.4));
-            max-width: 160px;
-        }
-
         .layout-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -335,16 +297,6 @@
         </header>
 
         <section class="glass-card">
-            <div class="step-indicator">
-                <div class="step active">1</div>
-                <div class="step-line"></div>
-                <div class="step">2</div>
-                <div class="step-line"></div>
-                <div class="step">3</div>
-                <div class="step-line"></div>
-                <div class="step">4</div>
-            </div>
-
             <div class="layout-grid">
                 <div class="sundial-panel">
                     <div class="sundial-frame">
@@ -386,6 +338,13 @@
             month: { radius: 170, width: 26 },
             day: { radius: 120, width: 22 },
             hour: { radius: 75, width: 16 }
+        };
+
+        const DEFAULT_LOCATION = {
+            latitude: 22.3964,
+            longitude: 114.1095,
+            address: '香港',
+            country: '中国'
         };
 
         const rings = {
@@ -759,7 +718,8 @@ function drawValues(type, radius) {
             };
 
             sessionStorage.setItem('selectedTime', JSON.stringify(selectedTime));
-            window.location.href = '/location';
+            sessionStorage.setItem('selectedLocation', JSON.stringify(DEFAULT_LOCATION));
+            window.location.href = '/starmap';
         }
 
         function darkenColor(color, factor) {
