@@ -899,6 +899,13 @@
             retryDelay: 1000
         };
 
+        const DEFAULT_LOCATION = {
+            latitude: 22.3964,
+            longitude: 114.1095,
+            address: '香港',
+            country: '中国'
+        };
+
 
 
         // Three.js CDN加载
@@ -1225,6 +1232,13 @@
             try {
                 selectedTimeData = JSON.parse(sessionStorage.getItem('selectedTime') || '{}');
                 selectedLocationData = JSON.parse(sessionStorage.getItem('selectedLocation') || '{}');
+
+                if (!selectedLocationData || !selectedLocationData.latitude) {
+                    selectedLocationData = { ...DEFAULT_LOCATION };
+                    sessionStorage.setItem('selectedLocation', JSON.stringify(selectedLocationData));
+                    console.log('未检测到位置数据，使用默认香港位置:', selectedLocationData);
+                }
+
                 console.log('读取到的时间数据:', selectedTimeData);
                 console.log('读取到的位置数据:', selectedLocationData);
                 displaySelectedInfo(selectedTimeData, selectedLocationData);
