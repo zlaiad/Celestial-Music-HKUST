@@ -36,9 +36,9 @@ logger = logging.getLogger(__name__)
 
 # 创建FastAPI应用
 app = FastAPI(
-    title="28星宿天体音乐生成器",
+    title="中国时间",
     description="基于传统中国天文学和十二星次的音乐生成系统",
-    version="3.0.0"
+    version="1.0.0"
 )
 
 # CORS中间件
@@ -632,8 +632,8 @@ if __name__ == "__main__":
         os.makedirs("static")
     
     logger.info("🚀 ==================== 系统启动 ====================")
-    logger.info("🎼 28星宿天体音乐生成器后端服务启动中...")
-    logger.info("📊 版本: 3.0.0 (基于十二星次和节气)")
+    logger.info("🎼 中国时间后端服务启动中...")
+    logger.info("📊 版本: 1.0.0")
     logger.info("🌐 访问路径:")
     logger.info("   📅 时间选择: http://localhost:8000/")
     logger.info("   📍 位置选择: http://localhost:8000/location")
